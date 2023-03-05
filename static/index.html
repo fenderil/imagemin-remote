@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Imagemin</title>
+        <meta charset="utf8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <link rel="icon" type="image/png" href="/static/favicon.ico">
+        <link rel="manifest" href="/static/manifest.json">
+        <script src="/static/reg-worker.js"></script>
+        <meta property="og:title" content="Imagemin remote" />
+        <meta property="og:description" content="You can use imagemin remotely" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://imagemin.fenderil.ru" />
+        <meta property="og:image" content="https://imagemin.fenderil.ru/static/nemiro-logo-n.png" />
+    </head>
+    <body>
+        <h1>
+            Drop your png files and get back minified archive
+        </h1>
+        <form id="sender">
+            <label>
+                <div>Drop files</div>
+                <input type="file" name="filesInput" multiple="multiple" />
+            </label>
+            <div>
+                <button type="sumbit">
+                    Minify
+                </button>
+            </div>
+        </form>
+        <div id="loader" style="display:none">
+            Loading...
+        </div>
+        <div id="download" style="display:none">
+            <button type="button" id="downloadBtn">Download</button>
+        </div>
+        <script>
+            ;(() => {
+                const form = document.getElementById('sender')
+                const loader = document.getElementById('loader')
+                const download = document.getElementById('download')
+                const downloadBtn = document.getElementById('downloadBtn')
+
+                let minifiedFile
+
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault()
+
+                    if (form.elements.filesInput.files.length) {
+                        const formData = new FormData(form)
+
+                        loader.style.display = 'block'
+                        download.style.display = 'none'
+                        form.reset()
+
+                        const response = await fetch('/minify', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        
+                        minifiedFile = await response.blob()
+
+                        loader.style.display = 'none'
+                        download.style.display = 'block'
+                    }
+                })
+
+                downloadBtn.addEventListener('click', (event) => {
+                    if (minifiedFile) {
+                        const file = new Blob([minifiedFile], { type: 'blob' })
+
+                        const a = document.createElement('a')
+                        const url = window.URL.createObjectURL(file)
+                        a.href = url
+                        a.download = 'imagemin_remote.zip'
+                        document.body.appendChild(a)
+                        a.click()
+                        setTimeout(() => {
+                            document.body.removeChild(a)
+                            window.URL.revokeObjectURL(url)
+                        })
+
+                        minifiedFile = null
+                        download.style.display = 'none'
+                    }
+                })
+            })()
+        </script>
+    </body>
+</html>
