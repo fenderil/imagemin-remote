@@ -18,54 +18,56 @@
             Drop your png files and get back minified archive
         </h1>
         <form id="sender">
-            <label>
-                <div>Drop files</div>
-                <input type="file" name="filesInput" multiple="multiple" />
-            </label>
+            <div>
+                <label>
+                    <div>Drop files</div>
+                    <input type="file" name="filesInput" multiple="multiple" />
+                </label>
+            </div>
+            <div>
+                <labeL>
+                    <div>
+                        Put lines be like "288px -lg_2x" (set empty, if no resize)
+                    </div>
+                    <textarea name="resizeTextarea" rows="10">288px -sm
+448px -md
+928px -lg
+576px -sm_2x
+896px -md_2x
+1856px -lg_2x</textarea>
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input name="onfinishCheckbox" type="checkbox">
+                    Download automatically on finish
+                </label>
+            </div>
             <div>
                 <button type="sumbit">
-                    Minify
+                    Minify 😎
                 </button>
             </div>
         </form>
         <div id="loader" style="display:none">
-            Loading...
+            Loading... <span id="loaderBytes">0 of 0</span> files
         </div>
         <div id="download" style="display:none">
             <button type="button" id="downloadBtn">Download</button>
         </div>
         <script>
             ;(() => {
+                fetch('/id')
+
                 const form = document.getElementById('sender')
                 const loader = document.getElementById('loader')
                 const download = document.getElementById('download')
                 const downloadBtn = document.getElementById('downloadBtn')
+                const loaderBytes = document.getElementById('loaderBytes')
 
                 let minifiedFile
 
-                form.addEventListener('submit', async (event) => {
-                    event.preventDefault()
-
-                    if (form.elements.filesInput.files.length) {
-                        const formData = new FormData(form)
-
-                        loader.style.display = 'block'
-                        download.style.display = 'none'
-                        form.reset()
-
-                        const response = await fetch('/minify', {
-                            method: 'POST',
-                            body: formData
-                        })
-                        
-                        minifiedFile = await response.blob()
-
-                        loader.style.display = 'none'
-                        download.style.display = 'block'
-                    }
-                })
-
-                downloadBtn.addEventListener('click', (event) => {
+                const dowload = () => {
                     if (minifiedFile) {
                         const file = new Blob([minifiedFile], { type: 'blob' })
 
@@ -83,7 +85,48 @@
                         minifiedFile = null
                         download.style.display = 'none'
                     }
-                })
+                }
+
+                const submit = async (event) => {
+                    event.preventDefault()
+
+                    if (form.elements.filesInput.files.length) {
+                        const formData = new FormData(form)
+
+                        const downloadOnFinish = form.elements.onfinishCheckbox.checked
+
+                        loader.style.display = 'block'
+                        download.style.display = 'none'
+                        form.reset()
+
+                        const intervalId = setInterval(async () => {
+                            const response = await fetch('/status')
+                            const bytes = await response.json()
+
+                            loaderBytes.innerHTML = `${bytes.progress.current} of ${bytes.progress.total}`
+                        }, 3000)
+
+                        const response = await fetch('/minify', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        
+                        minifiedFile = await response.blob()
+
+                        loader.style.display = 'none'
+                        clearInterval(intervalId)
+                        loaderBytes.innerHTML = 0
+
+                        if (downloadOnFinish) {
+                            dowload()
+                        } else {
+                            download.style.display = 'block'
+                        }
+                    }
+                }
+
+                form.addEventListener('submit', submit)
+                downloadBtn.addEventListener('click', dowload)
             })()
         </script>
     </body>
