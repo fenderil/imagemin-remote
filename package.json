@@ -19,6 +19,6 @@
     "imagemin-pngquant": "^9.0.2",
     "multer": "^1.4.4",
     "nanoid": "^4.0.1",
-    "resize-png-buffer": "^1.0.1"
+    "sharp": "^0.31.3"
   }
 }
